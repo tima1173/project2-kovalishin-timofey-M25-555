@@ -1,9 +1,10 @@
 # src/primitive_db/engine.py
 import shlex
 import prompt
+import os
 
-from primitive_db.core import create_table, drop_table
-from primitive_db.utils import load_metadata, save_metadata
+from primitive_db.core import create_table, drop_table, list_tables
+
 
 def print_help():
     """Prints the help message for the current mode."""
@@ -19,10 +20,14 @@ def print_help():
     print("<command> help - справочная информация\n")
 
 def run():
+    data_dir = "src/primitive_db/data"
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
+
     while True:
-        metadata = load_metadata("src/primitive_db/db_meta.json")
         command = prompt.string('Введите команду: ')
         args = shlex.split(command)
+
         match args[0]:
             case 'exit':
                 print('Программа завершена.')
@@ -39,28 +44,32 @@ def run():
                 for col in args[2:]:
                     try:
                         name, type = col.split(":", 1)
-                        columns.append((name, type))
+                        columns.append((name.strip(), type.strip()))
                     except ValueError:
                         print(f"Неверный формат столбца: '{col}'. "
                         "Столбец не был обработан.")
-                        continue
-                create_table(metadata, args[1], columns)
-                save_metadata("src/primitive_db/db_meta.json", metadata)
+                        break
+                else:
+                    create_table(args[1], columns)
 
             case 'list_tables':
-                if not metadata["tables"]:
-                    print("Таблицы отсутствуют.")
-                else:
+                tables = list_tables()
+                if tables:
                     print("Список таблиц:")
-                    for table in metadata["tables"]:
+                    for table in tables:
                         print(f"  - {table}")
+                else:
+                    print("Таблицы отсутствуют.")
 
             case 'drop_table':
-                drop_table(metadata, args[1])
-                save_metadata("src/primitive_db/db_meta.json", metadata)
+                if len(args) != 2:
+                    print("Неверное количество аргументов. "
+                    "Использование: drop_table <имя_таблицы>")
+                else:
+                    drop_table(args[1])
 
             case _:
                 print(f"Неизвестная команда: '{args[0]}'. Введите 'help'.")
 
-        save_metadata("src/primitive_db/db_meta.json", metadata)
+
         
