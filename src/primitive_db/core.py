@@ -1,7 +1,8 @@
 import os
 import json
+from prettytable import PrettyTable
 
-
+from primitive_db.utils import load_table_data, save_table_data
 
 def create_table(table_name, columns):
     """Создаёт таблицу в db_meta.json. Добавляет столбец ID по умолчанию."""
@@ -57,3 +58,101 @@ def list_tables():
     # Фильтруем только .json файлы
     tables = [f[:-5] for f in os.listdir(data_dir) if f.endswith(".json")]
     return tables
+
+
+def insert(table_name, values):
+    path = (f"src/primitive_db/data/{table_name}.json")
+
+    #проверяем что таблица существует
+    if not os.path.exists(path):
+        print(f"Таблицы {table_name} не существует.")
+        return False
+    
+    #проверяем что количество введенных данных совпадает с количеством столбцов в таблице
+    metadata = load_table_data(table_name)
+    columns = len((metadata)["columns"])
+    if len(values) != (columns - 1):
+        print(f"Количество введенных данных должно совпадать с количеством столбцов в таблице")
+        return False
+    
+    #проверяем что типы данных соответствуют типам столбцов
+    for i, value in enumerate(values):
+        if metadata["columns"][i + 1][1] == "int":
+            if not isinstance(value, int):
+                print(f"Ошибка: значение '{value}' должно быть типом 'int'.")
+                return False
+        elif metadata["columns"][i + 1][1] == "str":
+            if not isinstance(value, str):
+                print(f"Ошибка: значение '{value}' должно быть типом 'str'.")
+                return False
+        elif metadata["columns"][i + 1][1] == "bool":
+            if not isinstance(value, bool):
+                print(f"Ошибка: значение '{value}' должно быть типом 'bool'.")
+                return False
+
+    #добавляем ID к значениям
+    if metadata["rows"]:
+        last_id = metadata["rows"][-1][0]
+        values = [last_id + 1] + values
+    else:
+        values = [1] + values
+
+    #добавляем данные в таблицу    
+    metadata["rows"].append(values)
+    save_table_data(table_name, metadata)
+
+def select(table_name, where_clause=None):
+    """where_clause = {'variable': 'value'} - выводит только
+    записи где значения variable равны value"""
+
+    path = (f"src/primitive_db/data/{table_name}.json")
+
+    #проверяем что таблица существует
+    if not os.path.exists(path):
+        print(f"Таблицы {table_name} не существует.")
+        return False
+    
+    #выводим данные при пустом where_clause
+    if not where_clause:
+        metadata = load_table_data(table_name)
+        table = PrettyTable()
+        table.field_names = [col[0] for col in metadata["columns"]]
+        table.add_rows(metadata["rows"])
+        print(table)
+        return True
+
+    #проверяем корректность where_clause
+    if not isinstance(where_clause, dict):
+        print(f"Ошибка: where_clause должен быть словарём.")
+        return False
+    if len(where_clause) != 1:
+        print(f"Ошибка: where_clause должен содержать ровно один ключ.")
+        return False
+    
+    #выводим данные при where_clause
+    metadata = load_table_data(table_name)
+    table = PrettyTable()
+    table.field_names = [col[0] for col in metadata["columns"]]
+
+    for i, column in enumerate(metadata["columns"]):
+        if column[0] == list(where_clause.keys())[0]:
+            column_index = i
+            break
+
+    for row in metadata["rows"]:
+        if row[column_index] == list(where_clause.values())[0]:
+            table.add_row(row)
+    print(table)
+    return True
+
+
+
+
+
+def update(table_data, set_clause, where_clause):
+    pass
+
+def delete(table_data, where_clause):
+    pass
+
+
