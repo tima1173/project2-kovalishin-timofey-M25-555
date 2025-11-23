@@ -1,0 +1,25 @@
+{
+    "columns": [
+        [
+            "ID",
+            "int"
+        ],
+        [
+            "name",
+            "int"
+        ],
+        [
+            "age",
+            "int"
+        ],
+        [
+            "hobby",
+            "str"
+        ],
+        [
+            "marriage",
+            "bool"
+        ]
+    ],
+    "rows": []
+}

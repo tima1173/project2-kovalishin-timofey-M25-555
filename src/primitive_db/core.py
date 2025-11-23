@@ -93,13 +93,17 @@ def insert(table_name, values):
     #добавляем ID к значениям
     if metadata["rows"]:
         last_id = metadata["rows"][-1][0]
-        values = [last_id + 1] + values
+        new_id = last_id + 1
     else:
-        values = [1] + values
+        new_id = 1
+    values = new_id + values
 
     #добавляем данные в таблицу    
     metadata["rows"].append(values)
+    print(f"Запись с ID={new_id} в таблице '{table_name}' успешно обновлена.")
+
     save_table_data(table_name, metadata)
+
 
 def select(table_name, where_clause=None):
     """where_clause = {'variable': 'value'} - выводит только
@@ -112,32 +116,31 @@ def select(table_name, where_clause=None):
         print(f"Таблицы {table_name} не существует.")
         return False
     
+    metadata = load_table_data(table_name)
+    table = PrettyTable()
+    table.field_names = [col[0] for col in metadata["columns"]]
+
     #выводим данные при пустом where_clause
     if not where_clause:
-        metadata = load_table_data(table_name)
-        table = PrettyTable()
-        table.field_names = [col[0] for col in metadata["columns"]]
         table.add_rows(metadata["rows"])
         print(table)
         return True
 
     #проверяем корректность where_clause
-    if not isinstance(where_clause, dict):
-        print(f"Ошибка: where_clause должен быть словарём.")
-        return False
-    if len(where_clause) != 1:
-        print(f"Ошибка: where_clause должен содержать ровно один ключ.")
+    if not isinstance(where_clause, dict) or len(where_clause) != 1:
+        print(f"Ошибка: where_clause должен быть словарем с ровно одним ключом.")
         return False
     
     #выводим данные при where_clause
-    metadata = load_table_data(table_name)
-    table = PrettyTable()
-    table.field_names = [col[0] for col in metadata["columns"]]
-
+    column_index = None
     for i, column in enumerate(metadata["columns"]):
         if column[0] == list(where_clause.keys())[0]:
             column_index = i
             break
+
+    if column_index is None:
+        print(f"Ошибка: столбец '{list(where_clause.keys())[0]}' не найден.")
+        return False
 
     for row in metadata["rows"]:
         if row[column_index] == list(where_clause.values())[0]:
@@ -146,13 +149,98 @@ def select(table_name, where_clause=None):
     return True
 
 
+def update(table_name, set_clause, where_clause):
+    path = (f"src/primitive_db/data/{table_name}.json")
 
+    #проверяем что таблица существует
+    if not os.path.exists(path):
+        print(f"Таблицы {table_name} не существует.")
+        return False
 
+    metadata = load_table_data(table_name)
 
-def update(table_data, set_clause, where_clause):
-    pass
+    #проверяем что where_clause и set_clause корректны
+    if not isinstance(where_clause, dict) or len(where_clause) != 1:
+        print(f"Ошибка: where_clause должен быть словарем с ровно одним ключом.")
+        return False
+    
+    if not isinstance(set_clause, dict) or len(set_clause) != 1:
+        print(f"Ошибка: set_clause должен быть словарем с ровно одним ключом.")
+        return False
+    
+    #ключи и значения where_clause и set_clause
+    where_col_name = list(where_clause.keys())[0]
+    where_col_value = list(where_clause.values())[0]
+    set_col_name = list(set_clause.keys())[0]
+    new_value = list(set_clause.values())[0]
 
-def delete(table_data, where_clause):
-    pass
+    if set_col_name == "ID":
+        print("Ошибка: изменение значения ID запрещено.")
+        return False
+
+    #индекс столбца для условия (WHERE)
+    try:
+        where_col_index = next(i for i, col in enumerate(metadata["columns"]) if col[0] == where_col_name)
+    except StopIteration:
+        print(f"Ошибка: столбец '{where_col_name}' не найден.")
+        return False
+
+    #индекс столбца для обновления (SET)
+    try:
+        set_col_index = next(i for i, col in enumerate(metadata["columns"]) if col[0] == set_col_name)
+    except StopIteration:
+        print(f"Ошибка: столбец '{set_col_name}' не найден.")
+        return False
+
+    #обновляем строки
+    updated = False
+    for row in metadata["rows"]:
+        if row[where_col_index] == where_col_value:
+            row[set_col_index] = new_value
+            updated = True
+
+    if not updated:
+        print(f"Условие '{where_col_name} = {where_col_value}' не найдено.")
+        return False
+
+    print(f"Таблица '{table_name}' успешно обновлена.")
+    save_table_data(table_name, metadata)
+    return True
+    
+
+def delete(table_name, where_clause):
+    path = f"src/primitive_db/data/{table_name}.json"
+
+    if not os.path.exists(path):
+        print(f"Таблицы '{table_name}' не существует.")
+        return False
+    
+    metadata = load_table_data(table_name)
+
+    if not isinstance(where_clause, dict) or len(where_clause) != 1:
+        print("Ошибка: where_clause должен быть словарём с одним ключом.")
+        return False
+
+    column_name = list(where_clause.keys())[0]
+    column_value = list(where_clause.values())[0]
+
+    try:
+        col_index = next(i for i, col in enumerate(metadata["columns"]) if col[0] == column_name)
+    except StopIteration:
+        print(f"Ошибка: столбец '{column_name}' не найден.")
+        return False
+
+    initial_count = len(metadata["rows"])
+    metadata["rows"] = [row for row in metadata["rows"] if row[col_index] != column_value]
+
+    deleted_count = initial_count - len(metadata["rows"])
+
+    if deleted_count == 0:
+        print(f"Условие '{column_name} = {column_value}' не найдено. Ничего не удалено.")
+        return False
+
+    save_table_data(table_name, metadata)
+    print(f"Успешно удалено {deleted_count} строк с условием '{column_name} = {column_value}'.")
+    return True
 
 
