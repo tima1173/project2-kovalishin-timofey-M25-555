@@ -95,7 +95,7 @@ def insert(table_name, values):
         last_id = metadata["rows"][-1][0]
         new_id = last_id + 1
     else:
-        new_id = 1
+        new_id = ["1"]
     values = new_id + values
 
     #добавляем данные в таблицу    

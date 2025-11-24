@@ -22,8 +22,8 @@ def print_help():
     
     print("\nКоманды модификации таблицы:")
     print("<command> insert into <имя_таблицы> values (<значение1>, <значение2>, ...) - создать запись")
-    print("<command> select from <имя_таблицы> - прочитать все записи")
-    print("<command> select from <имя_таблицы> where <столбец> = <значение> - прочитать записи по условию")
+    print("<command> select * from <имя_таблицы> - прочитать все записи")
+    print("<command> select * from <имя_таблицы> where <столбец> = <значение> - прочитать записи по условию")
     print("<command> update <имя_таблицы> set <столбец> = <значение> where <столбец> = <значение> - обновить запись")
     print("<command> delete from <имя_таблицы> where <столбец> = <значение> - удалить запись")
     #print("<command> info <имя_таблицы> - вывести информацию о таблице")
@@ -93,6 +93,10 @@ def run():
                 print(f"Неизвестная команда: '{args[0]}'. Введите 'help'.")
 
 def parse_value(value: str):
+    """
+    превращает строчные значения в правильный тип переменных для вставки в таблицу
+    для корректной проверки типов
+    """
     value = value.strip()
     if value.startswith(("'", '"')) and value.endswith(("'", '"')):
         return value[1:-1]
@@ -105,23 +109,26 @@ def parse_value(value: str):
     return value
 
 def parse_clause(clause: str):
+    """
+    превращает строку типа key = val в словарь {key:val}
+    """
     if '=' not in clause:
         return None
     key, val = clause.split('=', 1)
     key = key.strip()
+    val = val.strip()
     val = parse_value(val)
     return {key: val}
 
 
 def parse_crud(command: str):
     """
-    Разбирает CRUD-команду и вызывает соответствующую функцию.
+    парсинг crud команд
     """
     tokens = shlex.split(command.lower())
     if not tokens:
         return False
 
-    # Приводим к нижнему регистру, но сохраняем оригинальные кавычки через shlex
     orig_tokens = shlex.split(command)
 
     try:
