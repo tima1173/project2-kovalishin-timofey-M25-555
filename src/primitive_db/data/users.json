@@ -28,6 +28,13 @@
             25,
             "basketball",
             true
+        ],
+        [
+            2,
+            "Jack",
+            24,
+            "drinking",
+            false
         ]
     ]
 }

@@ -48,4 +48,5 @@ def create_cacher():
         cache[key] = result
         print(f"Результат для {key} добавлен в кеш.")
         return result
+    cache_result.invalidate = lambda key=None: cache.clear() if key is None else cache.pop(key, None)
     return cache_result

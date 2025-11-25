@@ -105,6 +105,9 @@ def insert(table_name, values):
     #добавляем ID к значениям
     if metadata["rows"]:
         last_id = metadata["rows"][-1][0]
+        # преобразуем ID в число для выполнения арифметических операций
+        if isinstance(last_id, str):
+            last_id = int(last_id)
         new_id = last_id + 1
     else:
         new_id = 1
@@ -114,6 +117,7 @@ def insert(table_name, values):
     metadata["rows"].append(new_row)
     print(f"Запись с ID={new_id} в таблице '{table_name}' успешно добавлена.")
     save_table_data(table_name, metadata)
+    select_cacher.invalidate()
 
 select_cacher = create_cacher()
 @handle_db_errors
@@ -156,9 +160,22 @@ def select(table_name, where_clause=None):
         if column_index is None:
             print(f"Ошибка: столбец '{list(where_clause.keys())[0]}' не найден.")
             return False
-
+    
+        # преобразуем значения для корректного сравнения
+        where_value = list(where_clause.values())[0]
+        
         for row in metadata["rows"]:
-            if row[column_index] == list(where_clause.values())[0]:
+            row_value = row[column_index]
+            
+            # если оба значения могут быть преобразованы в числа, сравниваем как числа
+            if (isinstance(row_value, str) and row_value.isdigit() and
+                isinstance(where_value, int)):
+                row_value = int(row_value)
+            elif (isinstance(row_value, int) and
+                  isinstance(where_value, str) and where_value.isdigit()):
+                where_value = int(where_value)
+                
+            if row_value == where_value:
                 table.add_row(row)
         print(table)
         return True
@@ -211,7 +228,19 @@ def update(table_name, set_clause, where_clause):
     #обновляем строки
     updated = False
     for row in metadata["rows"]:
-        if row[where_col_index] == where_col_value:
+        # преобразуем значения для корректного сравнения
+        row_value = row[where_col_index]
+        where_value = where_col_value
+        
+        # если оба значения могут быть преобразованы в числа, сравниваем как числа
+        if (isinstance(row_value, str) and row_value.isdigit() and
+            isinstance(where_value, int)):
+            row_value = int(row_value)
+        elif (isinstance(row_value, int) and
+              isinstance(where_value, str) and where_value.isdigit()):
+            where_value = int(where_value)
+            
+        if row_value == where_value:
             row[set_col_index] = new_value
             updated = True
 
@@ -221,6 +250,7 @@ def update(table_name, set_clause, where_clause):
 
     print(f"Таблица '{table_name}' успешно обновлена.")
     save_table_data(table_name, metadata)
+    select_cacher.invalidate()
     return True
     
 @handle_db_errors
@@ -248,7 +278,22 @@ def delete(table_name, where_clause):
         return False
 
     initial_count = len(metadata["rows"])
-    metadata["rows"] = [row for row in metadata["rows"] if row[col_index] != column_value]
+    # преобразуем значения для корректного сравнения в фильтре
+    def compare_values(row_value, compare_value):
+        # если оба значения могут быть преобразованы в числа, сравниваем как числа
+        row_val = row_value
+        comp_val = compare_value
+        
+        if (isinstance(row_val, str) and row_val.isdigit() and
+            isinstance(comp_val, int)):
+            row_val = int(row_val)
+        elif (isinstance(row_val, int) and
+              isinstance(comp_val, str) and comp_val.isdigit()):
+            comp_val = int(comp_val)
+            
+        return row_val != comp_val
+    
+    metadata["rows"] = [row for row in metadata["rows"] if compare_values(row[col_index], column_value)]
 
     deleted_count = initial_count - len(metadata["rows"])
 
@@ -257,6 +302,7 @@ def delete(table_name, where_clause):
         return False
 
     save_table_data(table_name, metadata)
+    select_cacher.invalidate()
     print(f"Успешно удалено {deleted_count} строк с условием '{column_name} = {column_value}'.")
     return True
 
