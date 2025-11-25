@@ -107,13 +107,12 @@ def insert(table_name, values):
         last_id = metadata["rows"][-1][0]
         new_id = last_id + 1
     else:
-        new_id = ["1"]
-    values = new_id + values
+        new_id = 1
 
-    #добавляем данные в таблицу    
-    metadata["rows"].append(values)
-    print(f"Запись с ID={new_id} в таблице '{table_name}' успешно обновлена.")
+    new_row = [new_id] + values
 
+    metadata["rows"].append(new_row)
+    print(f"Запись с ID={new_id} в таблице '{table_name}' успешно добавлена.")
     save_table_data(table_name, metadata)
 
 select_cacher = create_cacher()
