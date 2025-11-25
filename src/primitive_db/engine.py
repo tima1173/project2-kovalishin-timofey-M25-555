@@ -7,7 +7,6 @@ from primitive_db.core import (
     create_table, drop_table, list_tables,
     insert, select, update, delete
 )
-from primitive_db.utils import load_table_data
                                
 
 

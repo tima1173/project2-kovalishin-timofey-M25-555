@@ -2,8 +2,18 @@ import os
 import json
 from prettytable import PrettyTable
 
-from primitive_db.utils import load_table_data, save_table_data
+from primitive_db.utils import (
+    load_table_data,
+    save_table_data
+)
+from primitive_db.decorators import (
+    confirm_action,
+    create_cacher,
+    handle_db_errors,
+    log_time,
+)
 
+@handle_db_errors
 def create_table(table_name, columns):
     """Создаёт таблицу в db_meta.json. Добавляет столбец ID по умолчанию."""
 
@@ -36,7 +46,8 @@ def create_table(table_name, columns):
     print(f"Таблица '{table_name}' создана.")
     return True
 
-
+@handle_db_errors
+@confirm_action('удаление таблицы')
 def drop_table(table_name):
     """
     Удаляет файл таблицы из data/.
@@ -59,7 +70,8 @@ def list_tables():
     tables = [f[:-5] for f in os.listdir(data_dir) if f.endswith(".json")]
     return tables
 
-
+@handle_db_errors
+@log_time
 def insert(table_name, values):
     path = (f"src/primitive_db/data/{table_name}.json")
 
@@ -104,51 +116,56 @@ def insert(table_name, values):
 
     save_table_data(table_name, metadata)
 
-
+select_cacher = create_cacher()
+@handle_db_errors
+@log_time
 def select(table_name, where_clause=None):
     """where_clause = {'variable': 'value'} - выводит только
     записи где значения variable равны value"""
+    cache_key = f"select:{table_name}:{where_clause}"
 
-    path = (f"src/primitive_db/data/{table_name}.json")
+    def load_and_format():
+        path = (f"src/primitive_db/data/{table_name}.json")
 
-    #проверяем что таблица существует
-    if not os.path.exists(path):
-        print(f"Таблицы {table_name} не существует.")
-        return False
-    
-    metadata = load_table_data(table_name)
-    table = PrettyTable()
-    table.field_names = [col[0] for col in metadata["columns"]]
+        #проверяем что таблица существует
+        if not os.path.exists(path):
+            print(f"Таблицы {table_name} не существует.")
+            return False
+        
+        metadata = load_table_data(table_name)
+        table = PrettyTable()
+        table.field_names = [col[0] for col in metadata["columns"]]
 
-    #выводим данные при пустом where_clause
-    if not where_clause:
-        table.add_rows(metadata["rows"])
+        #выводим данные при пустом where_clause
+        if not where_clause:
+            table.add_rows(metadata["rows"])
+            print(table)
+            return True
+
+        #проверяем корректность where_clause
+        if not isinstance(where_clause, dict) or len(where_clause) != 1:
+            print(f"Ошибка: where_clause должен быть словарем с ровно одним ключом.")
+            return False
+        
+        #выводим данные при where_clause
+        column_index = None
+        for i, column in enumerate(metadata["columns"]):
+            if column[0] == list(where_clause.keys())[0]:
+                column_index = i
+                break
+
+        if column_index is None:
+            print(f"Ошибка: столбец '{list(where_clause.keys())[0]}' не найден.")
+            return False
+
+        for row in metadata["rows"]:
+            if row[column_index] == list(where_clause.values())[0]:
+                table.add_row(row)
         print(table)
         return True
+    return select_cacher(cache_key, load_and_format)
 
-    #проверяем корректность where_clause
-    if not isinstance(where_clause, dict) or len(where_clause) != 1:
-        print(f"Ошибка: where_clause должен быть словарем с ровно одним ключом.")
-        return False
-    
-    #выводим данные при where_clause
-    column_index = None
-    for i, column in enumerate(metadata["columns"]):
-        if column[0] == list(where_clause.keys())[0]:
-            column_index = i
-            break
-
-    if column_index is None:
-        print(f"Ошибка: столбец '{list(where_clause.keys())[0]}' не найден.")
-        return False
-
-    for row in metadata["rows"]:
-        if row[column_index] == list(where_clause.values())[0]:
-            table.add_row(row)
-    print(table)
-    return True
-
-
+@handle_db_errors
 def update(table_name, set_clause, where_clause):
     path = (f"src/primitive_db/data/{table_name}.json")
 
@@ -207,7 +224,8 @@ def update(table_name, set_clause, where_clause):
     save_table_data(table_name, metadata)
     return True
     
-
+@handle_db_errors
+@confirm_action('удаление строки')
 def delete(table_name, where_clause):
     path = f"src/primitive_db/data/{table_name}.json"
 

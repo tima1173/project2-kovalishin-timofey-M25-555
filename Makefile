@@ -3,7 +3,7 @@
 install:
 	poetry install
 
-project:
+project | database:
 	poetry run project
 
 build:
@@ -17,4 +17,3 @@ package-install:
 
 lint:
 	poetry run ruff check .
-  

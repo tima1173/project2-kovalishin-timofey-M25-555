@@ -6,7 +6,6 @@ dist/
 build/
 *.egg-info/
 
-# Исключить файлы и папки кэша Python
 __pycache__/
 
 
