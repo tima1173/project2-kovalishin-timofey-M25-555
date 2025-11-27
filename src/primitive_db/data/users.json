@@ -35,6 +35,20 @@
             24,
             "drinking",
             false
+        ],
+        [
+            3,
+            "Jack",
+            25,
+            "DUI",
+            true
+        ],
+        [
+            4,
+            "Aubrey",
+            30,
+            "music",
+            false
         ]
     ]
 }

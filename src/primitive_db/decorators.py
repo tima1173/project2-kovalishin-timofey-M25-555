@@ -40,13 +40,18 @@ def log_time(func):
 
 def create_cacher():
     cache = {}
-    def cache_result(key, value_func):
+    def cache_result(key, value_func, post_process=None):
         if key in cache:
             print(f"Результат для {key} получен из кеша.")
-            return cache[key]
+            result = cache[key]
+            if post_process:
+                post_process(result)
+            return result
         result = value_func()
         cache[key] = result
         print(f"Результат для {key} добавлен в кеш.")
+        if post_process:
+            post_process(result)
         return result
     cache_result.invalidate = lambda key=None: cache.clear() if key is None else cache.pop(key, None)
     return cache_result

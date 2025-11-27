@@ -127,13 +127,13 @@ def select(table_name, where_clause=None):
     записи где значения variable равны value"""
     cache_key = f"select:{table_name}:{where_clause}"
 
-    def load_and_format():
+    def load_data():
         path = (f"src/primitive_db/data/{table_name}.json")
 
         #проверяем что таблица существует
         if not os.path.exists(path):
             print(f"Таблицы {table_name} не существует.")
-            return False
+            return False, None
         
         metadata = load_table_data(table_name)
         table = PrettyTable()
@@ -142,13 +142,12 @@ def select(table_name, where_clause=None):
         #выводим данные при пустом where_clause
         if not where_clause:
             table.add_rows(metadata["rows"])
-            print(table)
-            return True
+            return True, table
 
         #проверяем корректность where_clause
         if not isinstance(where_clause, dict) or len(where_clause) != 1:
             print(f"Ошибка: where_clause должен быть словарем с ровно одним ключом.")
-            return False
+            return False, None
         
         #выводим данные при where_clause
         column_index = None
@@ -159,11 +158,12 @@ def select(table_name, where_clause=None):
 
         if column_index is None:
             print(f"Ошибка: столбец '{list(where_clause.keys())[0]}' не найден.")
-            return False
+            return False, None
     
         # преобразуем значения для корректного сравнения
         where_value = list(where_clause.values())[0]
         
+        rows_to_add = []
         for row in metadata["rows"]:
             row_value = row[column_index]
             
@@ -176,10 +176,23 @@ def select(table_name, where_clause=None):
                 where_value = int(where_value)
                 
             if row_value == where_value:
-                table.add_row(row)
-        print(table)
-        return True
-    return select_cacher(cache_key, load_and_format)
+                rows_to_add.append(row)
+        
+        if rows_to_add:
+            table.add_rows(rows_to_add)
+        return True, table
+
+    def print_table(result):
+        success, table = result
+        if success and table is not None:
+            print(table)
+        return success
+    
+    # Вызываем кэшер с функцией пост-обработки для печати таблицы
+    result = select_cacher(cache_key, load_data, print_table)
+    
+    # Возвращаем результат (True или False)
+    return result
 
 @handle_db_errors
 def update(table_name, set_clause, where_clause):
