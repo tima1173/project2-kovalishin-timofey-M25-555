@@ -96,4 +96,4 @@ src/
 pip install .
 
 #### Запуск программы
-database
+make database | make project
