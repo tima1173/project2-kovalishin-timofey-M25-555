@@ -22,9 +22,9 @@ def print_help():
     print("\nКоманды модификации таблицы:")
     print("<command> insert into <имя_таблицы> values (<значение1>, <значение2>, ...) - создать запись")
     print("<command> select * from <имя_таблицы> - прочитать все записи")
-    print("<command> select * from <имя_таблицы> where <столбец> = <значение> - прочитать записи по условию")
-    print("<command> update <имя_таблицы> set <столбец> = <значение> where <столбец> = <значение> - обновить запись")
-    print("<command> delete from <имя_таблицы> where <столбец> = <значение> - удалить запись")
+    print("<command> select * from <имя_таблицы> where <столбец>=<значение> - прочитать записи по условию")
+    print("<command> update <имя_таблицы> set <столбец>=<значение> where <столбец>=<значение> - обновить запись")
+    print("<command> delete from <имя_таблицы> where <столбец>=<значение> - удалить запись")
     #print("<command> info <имя_таблицы> - вывести информацию о таблице")
     
 
@@ -60,8 +60,17 @@ def run():
                 columns = []
                 for col in args[2:]:
                     try:
-                        name, type = col.split(":", 1)
-                        columns.append((name.strip(), type.strip()))
+                        if ":" in col:
+                            name, type = col.split(":", 1)
+                            name = name.strip()
+                            type = type.strip()
+                            columns.append((name, type))
+                        elif "=" in col:
+                            name, type = col.split("=", 1)
+                            name = name.strip()
+                            type = type.strip()
+                            columns.append((name, type))
+
                     except ValueError:
                         print(f"Неверный формат столбца: '{col}'. "
                         "Столбец не был обработан.")
@@ -111,12 +120,18 @@ def parse_clause(clause: str):
     """
     превращает строку типа key = val в словарь {key:val}
     """
-    if '=' not in clause:
+    if '=' not in clause or ':' not in clause:
         return None
-    key, val = clause.split('=', 1)
-    key = key.strip()
-    val = val.strip()
-    val = parse_value(val)
+    
+    if ":" in clause:
+        key, val = clause.split(":", 1)
+        key = key.strip()
+        val = val.strip()
+    elif "=" in clause:
+        key, val = clause.split("=", 1)
+        key = key.strip()
+        val = val.strip()
+
     return {key: val}
 
 

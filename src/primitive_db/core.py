@@ -109,8 +109,10 @@ def insert(table_name, values):
         if isinstance(last_id, str):
             last_id = int(last_id)
         new_id = last_id + 1
+        new_id = str(new_id)
     else:
         new_id = 1
+        new_id = str(new_id)
 
     new_row = [new_id] + values
 
