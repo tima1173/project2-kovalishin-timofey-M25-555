@@ -1,13 +1,15 @@
 import time
 from functools import wraps
 
+
 def handle_db_errors(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except FileNotFoundError:
-            print("Ошибка: Файл данных не найден. Возможно, база данных не инициализирована.")
+            print("Ошибка: Файл данных не найден. "
+                  "Возможно, база данных не инициализирована.")
         except KeyError as e:
             print(f"Ошибка: Таблица или столбец {e} не найден.")
         except ValueError as e:
@@ -54,5 +56,6 @@ def create_cacher():
         if post_process:
             post_process(result)
         return result
-    cache_result.invalidate = lambda key=None: cache.clear() if key is None else cache.pop(key, None)
+    cache_result.invalidate = lambda key=None: cache.clear() if key is None \
+        else cache.pop(key, None)
     return cache_result

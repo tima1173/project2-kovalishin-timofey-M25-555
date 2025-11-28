@@ -1,7 +1,6 @@
 import json
 
 
-
 def load_table_data(table_name):
     "выгрузка json файла с названием table_name в python словарь"
     filepath = f"src/primitive_db/data/{table_name}.json"

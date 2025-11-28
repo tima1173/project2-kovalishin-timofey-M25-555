@@ -1,13 +1,18 @@
 # src/primitive_db/engine.py
-import shlex
-import prompt
 import os
+import shlex
+
+import prompt
 
 from primitive_db.core import (
-    create_table, drop_table, list_tables,
-    insert, select, update, delete
+    create_table,
+    delete,
+    drop_table,
+    insert,
+    list_tables,
+    select,
+    update,
 )
-                               
 
 
 def print_help():
@@ -20,11 +25,15 @@ def print_help():
     print("<command> drop_table <имя_таблицы> - удалить таблицу")
     
     print("\nКоманды модификации таблицы:")
-    print("<command> insert into <имя_таблицы> values (<значение1>, <значение2>, ...) - создать запись")
+    print("<command> insert into <имя_таблицы>" \
+    " values (<значение1>, <значение2>, ...) - создать запись")
     print("<command> select * from <имя_таблицы> - прочитать все записи")
-    print("<command> select * from <имя_таблицы> where <столбец>=<значение> - прочитать записи по условию")
-    print("<command> update <имя_таблицы> set <столбец>=<значение> where <столбец>=<значение> - обновить запись")
-    print("<command> delete from <имя_таблицы> where <столбец>=<значение> - удалить запись")
+    print("<command> select * from <имя_таблицы>" \
+    " where <столбец>=<значение> - прочитать записи по условию")
+    print("<command> update <имя_таблицы> set <столбец>=<значение>" \
+    " where <столбец>=<значение> - обновить запись")
+    print("<command> delete from <имя_таблицы>" \
+    " where <столбец>=<значение> - удалить запись")
     #print("<command> info <имя_таблицы> - вывести информацию о таблице")
     
 
@@ -149,7 +158,8 @@ def parse_crud(command: str):
         match tokens[0]:
             case "select":
                 if len(tokens) < 4 or tokens[1] != "*" or tokens[2] != "from":
-                    print("Ошибка: неправильный формат select. Используйте: select * from <table> [where ...]")
+                    print("Ошибка: неправильный формат select." \
+                    " Используйте: select * from <table> [where ...]")
                     return False
 
                 table_name = orig_tokens[3]
@@ -172,7 +182,8 @@ def parse_crud(command: str):
 
             case "update":
                 if len(tokens) < 6 or tokens[2] != "set" or "where" not in tokens:
-                    print("Ошибка: неправильный формат update. Используйте: update <table> set col=val where col=val")
+                    print("Ошибка: неправильный формат update." \
+                    " Используйте: update <table> set col=val where col=val")
                     return False
 
                 table_name = orig_tokens[1]
@@ -200,7 +211,8 @@ def parse_crud(command: str):
 
             case "delete":
                 if len(tokens) < 4 or tokens[1] != "from" or "where" not in tokens:
-                    print("Ошибка: неправильный формат delete. Используйте: delete from <table> where col=val")
+                    print("Ошибка: неправильный формат delete." \
+                    " Используйте: delete from <table> where col=val")
                     return False
 
                 where_idx = tokens.index("where")

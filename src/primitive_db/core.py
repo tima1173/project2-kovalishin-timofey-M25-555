@@ -1,17 +1,16 @@
-import os
 import json
+import os
+
 from prettytable import PrettyTable
 
-from primitive_db.utils import (
-    load_table_data,
-    save_table_data
-)
 from primitive_db.decorators import (
     confirm_action,
     create_cacher,
     handle_db_errors,
     log_time,
 )
+from primitive_db.utils import load_table_data, save_table_data
+
 
 @handle_db_errors
 def create_table(table_name, columns):
@@ -80,11 +79,13 @@ def insert(table_name, values):
         print(f"Таблицы {table_name} не существует.")
         return False
     
-    #проверяем что количество введенных данных совпадает с количеством столбцов в таблице
+    #проверяем что количество введенных данных
+    # совпадает с количеством столбцов в таблице
     metadata = load_table_data(table_name)
     columns = len((metadata)["columns"])
     if len(values) != (columns - 1):
-        print(f"Количество введенных данных должно совпадать с количеством столбцов в таблице")
+        print("Количество введенных данных должно совпадать с "
+              "количеством столбцов в таблице")
         return False
     
     #проверяем что типы данных соответствуют типам столбцов
@@ -148,7 +149,7 @@ def select(table_name, where_clause=None):
 
         #проверяем корректность where_clause
         if not isinstance(where_clause, dict) or len(where_clause) != 1:
-            print(f"Ошибка: where_clause должен быть словарем с ровно одним ключом.")
+            print("Ошибка: where_clause должен быть словарем с ровно одним ключом.")
             return False, None
         
         #выводим данные при where_clause
@@ -209,11 +210,11 @@ def update(table_name, set_clause, where_clause):
 
     #проверяем что where_clause и set_clause корректны
     if not isinstance(where_clause, dict) or len(where_clause) != 1:
-        print(f"Ошибка: where_clause должен быть словарем с ровно одним ключом.")
+        print("Ошибка: where_clause должен быть словарем с ровно одним ключом.")
         return False
     
     if not isinstance(set_clause, dict) or len(set_clause) != 1:
-        print(f"Ошибка: set_clause должен быть словарем с ровно одним ключом.")
+        print("Ошибка: set_clause должен быть словарем с ровно одним ключом.")
         return False
     
     #ключи и значения where_clause и set_clause
@@ -228,14 +229,16 @@ def update(table_name, set_clause, where_clause):
 
     #индекс столбца для условия (WHERE)
     try:
-        where_col_index = next(i for i, col in enumerate(metadata["columns"]) if col[0] == where_col_name)
+        where_col_index = next(i for i, col in enumerate(metadata["columns"])
+                               if col[0] == where_col_name)
     except StopIteration:
         print(f"Ошибка: столбец '{where_col_name}' не найден.")
         return False
 
     #индекс столбца для обновления (SET)
     try:
-        set_col_index = next(i for i, col in enumerate(metadata["columns"]) if col[0] == set_col_name)
+        set_col_index = next(i for i, col in enumerate(metadata["columns"])
+                            if col[0] == set_col_name)
     except StopIteration:
         print(f"Ошибка: столбец '{set_col_name}' не найден.")
         return False
@@ -287,7 +290,8 @@ def delete(table_name, where_clause):
     column_value = list(where_clause.values())[0]
 
     try:
-        col_index = next(i for i, col in enumerate(metadata["columns"]) if col[0] == column_name)
+        col_index = next(i for i, col in enumerate(metadata["columns"])
+                        if col[0] == column_name)
     except StopIteration:
         print(f"Ошибка: столбец '{column_name}' не найден.")
         return False
@@ -308,17 +312,20 @@ def delete(table_name, where_clause):
             
         return row_val != comp_val
     
-    metadata["rows"] = [row for row in metadata["rows"] if compare_values(row[col_index], column_value)]
+    metadata["rows"] = [row for row in metadata["rows"]
+                        if compare_values(row[col_index], column_value)]
 
     deleted_count = initial_count - len(metadata["rows"])
 
     if deleted_count == 0:
-        print(f"Условие '{column_name} = {column_value}' не найдено. Ничего не удалено.")
+        print(f"Условие '{column_name} = {column_value}' не найдено. "
+              "Ничего не удалено.")
         return False
 
     save_table_data(table_name, metadata)
     select_cacher.invalidate()
-    print(f"Успешно удалено {deleted_count} строк с условием '{column_name} = {column_value}'.")
+    print(f"Успешно удалено {deleted_count} строк с условием "
+          f"'{column_name} = {column_value}'.")
     return True
 
 
