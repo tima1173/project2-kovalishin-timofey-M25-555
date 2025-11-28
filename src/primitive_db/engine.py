@@ -120,7 +120,7 @@ def parse_clause(clause: str):
     """
     превращает строку типа key = val в словарь {key:val}
     """
-    if '=' not in clause or ':' not in clause:
+    if '=' not in clause and ':' not in clause:
         return None
     
     if ":" in clause:
