@@ -101,4 +101,4 @@ make database | make project
 
 
 ## Asciinema
-https://asciinema.org/session/new?t=SFMyNTY.g2gDaAJiAAQ0emJpKvArbgYALqe6z5oBYgABUYA.GRl5TU8eV7FbFUx5bLSDbYs2KnhOf-GdijzdtR0jNHY
+https://asciinema.org/a/Qv6zfTZLT4WipoWtyBGgpOQCg
